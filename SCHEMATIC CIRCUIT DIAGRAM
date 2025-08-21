@@ -1,0 +1,71 @@
+(* -------- Gypsy Rover Circuit Diagram (Block Schematic) -------- *)
+
+components = {
+  "Arduino", "ESP32-CAM", "L298N Motor Driver",
+  "Left Motor", "Right Motor", "HC-SR04 Ultrasonic",
+  "Buzzer", "LED", "12V Battery"
+};
+
+edges = {
+  "12V Battery" -> "Arduino",
+  "12V Battery" -> "L298N Motor Driver",
+  "Arduino" <-> "ESP32-CAM",
+  "Arduino" <-> "HC-SR04 Ultrasonic",
+  "Arduino" -> "L298N Motor Driver",
+  "L298N Motor Driver" -> "Left Motor",
+  "L298N Motor Driver" -> "Right Motor",
+  "Arduino" -> "Buzzer",
+  "Arduino" -> "LED"
+};
+
+edgeLabels = <|
+  ("12V Battery" -> "Arduino") ->
+    " +12V → VIN,  GND → GND (common)",
+  ("12V Battery" -> "L298N Motor Driver") ->
+    "+12V → VMS,  GND → GND (common)",
+  (UndirectedEdge["Arduino", "ESP32-CAM"]) ->
+    Row[{
+      "5V↔5V, GND↔GND,  ",
+      Style["UART:", Bold], " ESP32 TX0 → D2;  ",
+      "D12 → ESP32 RX0 ", Style["(2k/1k divider)", Smaller]
+    }],
+  (UndirectedEdge["Arduino", "HC-SR04 Ultrasonic"]) ->
+    "VCC→5V, GND→GND, TRIG→D9, ECHO→D10",
+  ("Arduino" -> "L298N Motor Driver") ->
+    Row[{
+      "ENA→D3(PWM), ENB→D4(PWM);  IN1→D5, IN2→D6, IN3→D7, IN4→D8  ",
+      Style["(do not back-power Arduino from L298N 5V)", Smaller]
+    }],
+  ("L298N Motor Driver" -> "Left Motor") -> "OUT1/OUT2 → Left Motor",
+  ("L298N Motor Driver" -> "Right Motor") -> "OUT3/OUT4 → Right Motor",
+  ("Arduino" -> "Buzzer") -> "D11 → 100Ω → Buzzer +,  – → GND",
+  ("Arduino" -> "LED") -> "D13 → 220Ω → Anode,  Cathode → GND"
+|>;
+
+vertexStyles = <|
+  "Arduino" -> LightBlue, "ESP32-CAM" -> LightOrange,
+  "L298N Motor Driver" -> LightGreen, "Left Motor" -> LightYellow,
+  "Right Motor" -> LightYellow, "HC-SR04 Ultrasonic" -> LightPink,
+  "Buzzer" -> LightGray, "LED" -> LightGray, "12V Battery" -> LightRed
+|>;
+
+icon[v_] := 
+  Framed[
+    Style[v, 13, Black, FontFamily -> "Helvetica"],
+    RoundingRadius -> 10, FrameStyle -> GrayLevel[.6], 
+    Background -> Lookup[vertexStyles, v, White], 
+    FrameMargins -> {{10, 10}, {6, 6}}
+  ];
+
+g = Graph[
+  edges,
+  VertexLabels -> (v_ :> Placed[icon[v], Center]),
+  VertexSize -> Medium,
+  EdgeLabels -> (edgeLabels /. UndirectedEdge -> UndirectedEdge),
+  EdgeLabelStyle -> Directive[12, GrayLevel[.15], FontFamily -> "Helvetica"],
+  EdgeStyle -> Directive[Thick, Black],
+  GraphLayout -> {"LayeredDigraphEmbedding", "RootVertex" -> "12V Battery"},
+  ImageSize -> 1100, PlotRangePadding -> Scaled[.08]
+];
+
+g
