@@ -1,0 +1,44 @@
+import torch
+import cv2
+
+# Load YOLOv5 pre-trained model
+# Options: 'yolov5s', 'yolov5m', 'yolov5l', 'yolov5x'
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+
+# Set target classes (example: animals - dog, cat, cow, etc.)
+# You can map COCO dataset classes to only animals
+target_classes = ['dog', 'cat', 'cow', 'horse', 'sheep', 'elephant', 'bear', 'zebra', 'giraffe']
+
+# Open ESP32-CAM stream (replace with your IP stream URL)
+cap = cv2.VideoCapture("http://<ESP32-CAM-IP>/video")
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Run YOLOv5 detection
+    results = model(frame)
+
+    # Filter results for animals only
+    for det in results.pred[0]:
+        class_id = int(det[-1])
+        label = model.names[class_id]
+
+        if label in target_classes:
+            # Draw bounding boxes
+            results.render()
+            print(f"Detected: {label}")
+
+            # Example alert
+            cv2.putText(frame, f"ALERT: {label} detected!", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+
+    # Show output
+    cv2.imshow("Gypsy Rover Detection", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
